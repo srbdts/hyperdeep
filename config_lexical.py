@@ -26,29 +26,29 @@ VALIDATION_SPLIT = 0.2
 # SIZE OF SENTENCE (NUMBER OF WORDS)
 MAX_SEQUENCE_LENGTH = 50
 
-NB_FILTERS = 256
+NB_FILTERS = 128
 
 # 3 filtres:
 # 1) taille 3
 # 2) taille 4
 # 3) taille 5
-FILTER_SIZES = [3,4,5]
-#FILTER_SIZES = [3]
+#FILTER_SIZES = [3,4,5]
+FILTER_SIZES = [3]
 # 3 filtres de taille 2 a chaque fois pour le maxpooling
 #FILTER_POOL_LENGTHS = [3,3,3]
 
 DROPOUT_VAL = 0.2
 
-DENSE_LAYER_SIZE = 200
+DENSE_LAYER_SIZE = 10
 
-NUM_EPOCHS = 10
-BATCH_SIZE = 800
+NUM_EPOCHS = 5
+BATCH_SIZE = 10
 
 # label delimiter
 LABEL_MARK = "__"
 
 # Label Dictionary:
-LABEL_DIC={
+LABEL_DIC_2={
         "will":0,
         "do":1,
         "shall":2,
@@ -73,7 +73,7 @@ LABEL_DIC={
 	"shalt":21,
 #	"does":22
         }
-LABEL_DIC_2={"LEXICAL":0,"MODAL":1}
+LABEL_DIC={"LEXICAL":0,"MODAL":1}
 
 
 
