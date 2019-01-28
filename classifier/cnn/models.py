@@ -11,7 +11,7 @@ from keras.layers import Conv1D, Conv2D, Conv2DTranspose, MaxPooling1D, MaxPooli
 from keras.layers import Input, Embedding, LSTM, Dense, merge
 #from keras.legacy.layers import Merge
 
-from config_vsc import EMBEDDING_DIM, NB_FILTERS, FILTER_SIZES, DROPOUT_VAL, TRAIN_EMBEDDING_WEIGHTS
+from config import EMBEDDING_DIM, NB_FILTERS, FILTER_SIZES, DROPOUT_VAL, TRAIN_EMBEDDING_WEIGHTS
 
 
 

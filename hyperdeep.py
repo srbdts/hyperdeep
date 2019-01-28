@@ -8,7 +8,7 @@ import sys
 import os
 import json
 
-from classifier.cnn.main_vsc import train, predict
+from classifier.cnn.main import train, predict
 
 def print_help():
     print("usage: python hyperdeep.py <command> <args>\n")

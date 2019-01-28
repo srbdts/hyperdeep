@@ -6,11 +6,11 @@ from keras.models import load_model
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Conv2D
 
-from classifier.cnn import models_vsc as models
+from classifier.cnn import models as models
 
 from data_helpers import tokenize
 
-from config_vsc import LABEL_MARK, DENSE_LAYER_SIZE, FILTER_SIZES, DROPOUT_VAL, NUM_EPOCHS, BATCH_SIZE, MAX_SEQUENCE_LENGTH, EMBEDDING_DIM, VALIDATION_SPLIT, LABEL_DIC, INSY_PATH, OOV_VECTOR
+from config import LABEL_MARK, DENSE_LAYER_SIZE, FILTER_SIZES, DROPOUT_VAL, NUM_EPOCHS, BATCH_SIZE, MAX_SEQUENCE_LENGTH, EMBEDDING_DIM, VALIDATION_SPLIT, LABEL_DIC, INSY_PATH, OOV_VECTOR
 
 from indexsystemwg import *
 
@@ -79,12 +79,7 @@ class PreProcessing:
         my_dictionary = self.my_dictionary["word_index"]
         embedding_matrix = np.zeros((len(my_dictionary)+1,EMBEDDING_DIM))
         for word,i in my_dictionary.items():
-            if word in insy.word_to_index:
-                embedding_matrix[i] = vectors[insy.word_to_index[word]]
-            elif word == "<TARGET>":
-                continue
-            else:
-                embedding_matrix[i] = OOV_VECTOR
+            embedding_matrix[i] = vectors[insy.word_to_index[word]]
         self.embedding_matrix = embedding_matrix
 
 def train(corpus_file,model_file,vectors_file):
@@ -93,6 +88,7 @@ def train(corpus_file,model_file,vectors_file):
         insy = pickle.load(open(params_obj.insy_path,"rb"))
         preprocessing = PreProcessing()
         preprocessing.loadData(corpus_file,model_file,params_obj.label_dic,create_dictionary=True,insy=insy)
+        print(preprocessing.x_train[0])
         preprocessing.loadEmbeddingsCustom(vectors_file,insy)
 
         #establish params

@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 
-from config_vsc import MAX_SEQUENCE_LENGTH
+from config import MAX_SEQUENCE_LENGTH
 
 def tokenize(texts, model_file, create_dictionnary,insy=False):
 
@@ -21,6 +21,7 @@ def tokenize(texts, model_file, create_dictionnary,insy=False):
      i = 0
      if insy:
             insy.word_to_index["<PAD>"] = 0
+            insy.word_to_index["<TARGET>"]=0
             insy.index_to_word[0] = "<PAD>"
             my_dictionary["word_index"] = insy.word_to_index
             my_dictionary["index_word"] = insy.index_to_word
