@@ -21,8 +21,9 @@ def tokenize(texts, model_file, create_dictionnary,insy=False):
      i = 0
      if insy:
             insy.word_to_index["<PAD>"] = 0
-            insy.word_to_index["<TARGET>"]=0
+            insy.word_to_index["<TARGET>"]=len(insy.word_to_index)
             insy.index_to_word[0] = "<PAD>"
+            insy.index_to_word[len(insy.index_to_word)]="<TARGET>"
             my_dictionary["word_index"] = insy.word_to_index
             my_dictionary["index_word"] = insy.index_to_word
             
@@ -38,7 +39,7 @@ def tokenize(texts, model_file, create_dictionnary,insy=False):
                          my_dictionary["word_index"][word] = index
                          my_dictionary["index_word"][index] = word
                     else:
-                         my_dictionary["word_index"][word] = my_dictionary["word_index"]["<PAD>"]
+                         my_dictionary["word_index"][word] = my_di:ctionary["word_index"]["<PAD>"]
                sentence.append(my_dictionary["word_index"][word])
             else:
                 if word in insy.word_to_index:
