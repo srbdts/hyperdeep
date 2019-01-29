@@ -82,8 +82,8 @@ class PreProcessing:
         target_vector = np.random.rand(EMBEDDING_DIM)
         for word,i in my_dictionary.items():
             if  word == "<TARGET>":
-            	embedding_matrix[i] = target_vector
-            elif word = "OOV":
+                embedding_matrix[i] = target_vector
+            elif word == "OOV":
                 embedding_matrix[i] = oov_vector
             else:
                 embedding_matrix[i] = vectors[insy.word_to_index[word]] 
