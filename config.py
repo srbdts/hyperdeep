@@ -78,12 +78,15 @@ LABEL_DIC_2={"LEXICAL":0,"MODAL":1}
 
 
 # indexsystem
-INSY_PATH = "/home/sara/sentenceSplit/src/split/indexsystemwg_bi"
-#INSY_PATH = "indexsystemwg_bi"
+#INSY_PATH = "/home/sara/sentenceSplit/src/split/indexsystemwg_bi"
+INSY_PATH = "/user/antwerpen/205/vsc20501/indexsystemwg_bi"
 
 # OOV vector
-OOV_VECTOR = np.load("/home/sara/sentenceSplit/src/lstms/oov.npy")
-#OOV_VECTOR = "/scratch/antwerpen/205/vsc20501/oov.npy"
+#OOV_VECTOR = np.load("/home/sara/sentenceSplit/src/lstms/oov.npy")
+OOV_VECTOR = "/scratch/antwerpen/205/vsc20501/oov.npy"
 
 # Train embedding weights
 TRAIN_EMBEDDING_WEIGHTS = True
+
+# What to mask the target with (ZERO/OOV/TARGET):
+MASKER="target"

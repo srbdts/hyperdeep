@@ -10,7 +10,7 @@ from classifier.cnn import models as models
 
 from data_helpers import tokenize
 
-from config import LABEL_MARK, DENSE_LAYER_SIZE, FILTER_SIZES, DROPOUT_VAL, NUM_EPOCHS, BATCH_SIZE, MAX_SEQUENCE_LENGTH, EMBEDDING_DIM, VALIDATION_SPLIT, LABEL_DIC, INSY_PATH, OOV_VECTOR
+from config import LABEL_MARK, DENSE_LAYER_SIZE, FILTER_SIZES, DROPOUT_VAL, NUM_EPOCHS, BATCH_SIZE, MAX_SEQUENCE_LENGTH, EMBEDDING_DIM, VALIDATION_SPLIT, LABEL_DIC, INSY_PATH, OOV_VECTOR, MASKER
 
 from indexsystemwg import *
 
@@ -82,8 +82,13 @@ class PreProcessing:
         target_vector = np.random.rand(EMBEDDING_DIM)
         for word,i in my_dictionary.items():
             if  word == "<TARGET>":
-            	embedding_matrix[i] = target_vector
-            elif word = "OOV":
+		if MASKER == "target":
+                	embedding_matrix[i] = target_vector
+		elif MASKER == "oov":
+			embedding_matrix[i] = oov_vector
+		elif MASKER == "zero":
+			continue
+            elif word == "OOV":
                 embedding_matrix[i] = oov_vector
             else:
                 embedding_matrix[i] = vectors[insy.word_to_index[word]] 
