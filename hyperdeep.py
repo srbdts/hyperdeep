@@ -7,6 +7,7 @@ Created on 16 nov. 2017
 import sys
 import os
 import json
+import numpy as np
 
 from classifier.cnn.main import train, predict
 
@@ -64,12 +65,21 @@ if __name__ == '__main__':
             vectors_file = args[3]
             text_file = args[4]
             output = args[5]
-            predictions = predict(text_file, model_file, vectors_file)
+            compressed = args[6]
+            if compressed == "False":
+                compressed = False
             # save predictions in a file
-            result_path = output
-            results = open(result_path, "w")
-            results.write(json.dumps(predictions))
-            results.close()
+            if not compressed:
+                predictions = predict(text_file,model_file,vectors_file,compressed=False)
+                result_path = output
+                results = open(result_path, "w")
+                results.write(json.dumps(predictions))
+                results.close()
+            else:
+                TDS,CONF = predict(text_file,model_file,vectors_file,compressed=True)
+                result_path = output
+                np.save(result_path + ".TDS",TDS)
+                np.save(result_path + ".CONF",CONF)
 
         #except:
         #    print_invalidArgs_mess()

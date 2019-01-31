@@ -82,12 +82,12 @@ class PreProcessing:
         target_vector = np.random.rand(EMBEDDING_DIM)
         for word,i in my_dictionary.items():
             if  word == "<TARGET>":
-		if MASKER == "target":
-                	embedding_matrix[i] = target_vector
-		elif MASKER == "oov":
-			embedding_matrix[i] = oov_vector
-		elif MASKER == "zero":
-			continue
+                if MASKER == "target":
+                    embedding_matrix[i] = target_vector
+                elif MASKER == "oov":
+                    embedding_matrix[i] = oov_vector
+                elif MASKER == "zero":
+                    continue
             elif word == "OOV":
                 embedding_matrix[i] = oov_vector
             else:
@@ -129,7 +129,7 @@ def train(corpus_file,model_file,vectors_file):
                 break
         deconv_model.save(model_file+".deconv")
 
-def predict(text_file,model_file,vectors_file,evaluation=False):
+def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False):
 
         result = []
         params_obj = Params()
@@ -166,26 +166,38 @@ def predict(text_file,model_file,vectors_file,evaluation=False):
         deconv = deconv_model.predict(x_data)
 
         my_dictionary = preprocessing.my_dictionary
-
-        for sentence_nb in range(len(x_data)):
-            sentence = {}
-            sentence["sentence"] = ""
-            sentence["prediction"] = predictions[sentence_nb].tolist()
-            #if not targets:
-            sentence["author"] = "UNKNOWN"
-            #else:
-            #    sentence["author"] = target[sentence_nb].tolist()
-            for i in range(len(x_data[sentence_nb])):
-                word = ""
-                index = x_data[sentence_nb][i]
-                try:
-                    word = my_dictionary["index_word"][index]
-                except:
-                    word = "PAD"
-                # READ DECONVOLUTION
-                deconv_value = float(np.sum(deconv[sentence_nb][i]))
-                sentence["sentence"] += word + ":" + str(deconv_value) + " "
-            result.append(sentence)
-        print("---------------------------------")
         
-        return result
+        if compressed:
+            #Sum over 1-dimensional axis
+            deconv = np.sum(deconv,axis=-1)
+            #Sum over 400-dimensional axis
+            deconv = np.sum(deconv,axis=-1)
+            #print("Shape of CONF: %s %s" % (predictions.shape()))
+            #print("Shape of TDS: %s %s" % (deconv.shape()))
+            TDS = np.asarray(deconv,dtype="int16")
+            CONF = np.asarray(predictions,dtype="float32")
+            print("--------------------------------")
+            return TDS,CONF
+        else:
+            for sentence_nb in range(len(x_data)):
+                sentence = {}
+                sentence["sentence"] = ""
+                sentence["prediction"] = predictions[sentence_nb].tolist()
+                #if not targets:
+                sentence["author"] = "UNKNOWN"
+                #else:
+                #    sentence["author"] = target[sentence_nb].tolist()
+                for i in range(len(x_data[sentence_nb])):
+                    word = ""
+                    index = x_data[sentence_nb][i]
+                    try:
+                        word = my_dictionary["index_word"][index]
+                    except:
+                        word = "PAD"
+                    # READ DECONVOLUTION
+                    deconv_value = float(np.sum(deconv[sentence_nb][i]))
+                    sentence["sentence"] += word + ":" + str(deconv_value) + " "
+                    result.append(sentence)
+            print("---------------------------------")
+            return result
+        
