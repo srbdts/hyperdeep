@@ -1,8 +1,9 @@
 import random, pickle
 import numpy as np
+from numpy import unravel_index
 
 from keras.utils import np_utils
-from keras.models import load_model
+from keras.models import load_model,Model
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Conv2D
 
@@ -128,6 +129,39 @@ def train(corpus_file,model_file,vectors_file):
             if type(layer) is Conv2D:
                 break
         deconv_model.save(model_file+".deconv")
+
+def get_maximal_stimuli(text_file,model_file,vectors_file):
+        
+        params_obj = Params()
+        insy = pickle.load(open(params_obj.insy_path,"rb"))
+        preprocessing = PreProcessing()
+        preprocessing.loadData(text_file,model_file,params_obj.label_dic,create_dictionary=False,insy=insy,preserve_order=True,evaluate=False)
+        preprocessing.loadEmbeddingsCustom(vectors_file,insy)
+        index_to_word = preprocessing.my_dictionary["index_word"]
+        index_to_word.append("<TARGET>")
+        x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
+        full_model = load_model(model_file)
+        model = Model(inputs=full_model.get_layer("input_1").input,outputs=full_model.get_layer("conv2d_1").output)
+        predictions = model.predict(x_data)
+        print(predictions.shape)
+        max_rank = 20
+
+        results = []
+        for i in range(predictions.shape[-1]):
+        #for i in range(5):
+            slice = predictions[:,:,:,i]
+            results.append([])
+            for rank in range(max_rank):
+                (n_sentence,n_word,_) = unravel_index(np.argmax(slice),slice.shape)
+                stimuli = []
+                for sliding_window in range(3):
+                    stimuli.append(preprocessing.my_dictionary["index_word"][x_data[n_sentence][n_word+sliding_window]])
+                    if n_word+sliding_window == len(x_data[n_sentence])-1:
+                        break
+                #print(np.max(slice))
+                results[-1].append(" ".join(stimuli))
+                slice[(n_sentence,n_word,0)]=0
+        return results
 
 def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False):
 

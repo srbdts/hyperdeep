@@ -9,7 +9,7 @@ import os
 import json
 import numpy as np
 
-from classifier.cnn.main import train, predict
+from classifier.cnn.main import train, predict, get_maximal_stimuli
 
 def print_help():
     print("usage: python hyperdeep.py <command> <args>\n")
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # GET COMMAND
     try:
         command = sys.argv[1]
-        if command not in ["train", "predict"]:
+        if command not in ["train", "predict","stimuli"]:
             raise
     except:
         print_help()
@@ -80,6 +80,17 @@ if __name__ == '__main__':
                 result_path = output
                 np.save(result_path + ".TDS",TDS)
                 np.save(result_path + ".CONF",CONF)
+    if command == "stimuli":
+            args = get_args()
+            model_file = args[2]
+            vectors_file = args[3]
+            text_file = args[4]
+            output = args[5]
+            features = get_maximal_stimuli(text_file,model_file,vectors_file)
+            opf = open(output,"w")
+            for feature_nr,stimuli in enumerate(features):
+                opf.write("%s\t%s\n" % (feature_nr," / ".join(stimuli)))
+            opf.close()
 
         #except:
         #    print_invalidArgs_mess()
