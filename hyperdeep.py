@@ -10,6 +10,7 @@ import json
 import numpy as np
 
 from classifier.cnn.main import train, predict, get_maximal_stimuli, get_activations
+from config import FILTER_SIZES
 
 def print_help():
     print("usage: python hyperdeep.py <command> <args>\n")
@@ -76,9 +77,10 @@ if __name__ == '__main__':
                 results.write(json.dumps(predictions))
                 results.close()
             else:
-                TDS,CONF = predict(text_file,model_file,vectors_file,compressed=True)
+                TDSs,CONF = predict(text_file,model_file,vectors_file,compressed=True)
                 result_path = output
-                np.save(result_path + ".TDS",TDS)
+                for fs,TDS in zip(FILTER_SIZES,TDSs):
+                    np.save(result_path +"." + str(fs) + ".TDS",TDS)
                 np.save(result_path + ".CONF",CONF)
     if command == "stimuli":
             args = get_args()

@@ -5,7 +5,7 @@ from numpy import unravel_index
 from keras.utils import np_utils
 from keras.models import load_model,Model
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Conv2D
+from keras.layers import Conv2D, Conv2DTranspose
 
 from classifier.cnn import models as models
 
@@ -199,6 +199,7 @@ def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False)
         preprocessing.loadEmbeddingsCustom(vectors_file,insy)
 
         x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
+        print(x_data.shape)
         model = load_model(model_file)
         if evaluation:
             target_word = text_file.split("/")[-1][2:-2]
@@ -214,30 +215,50 @@ def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False)
         print("------------------------------")
         print("DECONVOLUTION")
         print("------------------------------")
+        
+        filternr = 1
+        deconv_models = []
+        for filterwidth in FILTER_SIZES:
+            inputlayer = "conv2d_" + str(filternr)
+            deconv_layer_bis = Conv2DTranspose(1,(filterwidth,400),padding="valid",data_format="channels_last",kernel_initializer="normal",activation="relu")(model.get_layer(inputlayer).output)
+            deconv_model = Model(inputs=model.input,outputs=deconv_layer_bis)
+            #print(deconv_model.summary())
+            for layer in deconv_model.layers:
+                if type(layer) is Conv2D:
+                    deconv_weights = layer.get_weights()[0]
+            deconv_bias = deconv_model.layers[-1].get_weights()[1]
+            deconv_model.layers[-1].set_weights([deconv_weights,deconv_bias])
+            deconv_models.append(deconv_model)
+            filternr+= 1 
+        
+        #deconv_model = load_model(model_file+".deconv")
 
-        deconv_model = load_model(model_file+".deconv")
+        #for layer in deconv_model.layers:
+        #    if type(layer) is Conv2D:
+        #        deconv_weights = layer.get_weights()[0]
+        #deconv_bias = deconv_model.layers[-1].get_weights()[1]
+        #deconv_model.layers[-1].set_weights([deconv_weights,deconv_bias])
+        
+        deconvs = []
+        for deconv_model in deconv_models:
+            deconvs.append(deconv_model.predict(x_data))
 
-        for layer in deconv_model.layers:
-            if type(layer) is Conv2D:
-                deconv_weights = layer.get_weights()[0]
-        deconv_bias = deconv_model.layers[-1].get_weights()[1]
-        deconv_model.layers[-1].set_weights([deconv_weights,deconv_bias])
-
-        deconv = deconv_model.predict(x_data)
-
+        #deconv = deconv_model.predict(x_data)
         my_dictionary = preprocessing.my_dictionary
         
         if compressed:
-            #Sum over 1-dimensional axis
-            deconv = np.sum(deconv,axis=-1)
-            #Sum over 400-dimensional axis
-            deconv = np.sum(deconv,axis=-1)
-            #print("Shape of CONF: %s %s" % (predictions.shape()))
-            #print("Shape of TDS: %s %s" % (deconv.shape()))
-            TDS = np.asarray(deconv,dtype="int16")
+            TDSs=[]
+            for deconv in deconvs:
+                #Sum over 1-dimensional axis
+                deconv = np.sum(deconv,axis=-1)
+                #Sum over 400-dimensional axis
+                deconv = np.sum(deconv,axis=-1)
+                #print("Shape of CONF: %s %s" % (predictions.shape()))
+                #print("Shape of TDS: %s %s" % (deconv.shape()))
+                TDSs.append(np.asarray(deconv,dtype="int16"))
             CONF = np.asarray(predictions,dtype="float32")
             print("--------------------------------")
-            return TDS,CONF
+            return TDSs,CONF
         else:
             for sentence_nb in range(len(x_data)):
                 sentence = {}
@@ -257,7 +278,7 @@ def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False)
                     # READ DECONVOLUTION
                     deconv_value = float(np.sum(deconv[sentence_nb][i]))
                     sentence["sentence"] += word + ":" + str(deconv_value) + " "
-                    result.append(sentence)
+                result.append(sentence)
             print("---------------------------------")
             return result
         
