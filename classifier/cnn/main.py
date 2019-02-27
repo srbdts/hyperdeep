@@ -101,7 +101,6 @@ def train(corpus_file,model_file,vectors_file):
         insy = pickle.load(open(params_obj.insy_path,"rb"))
         preprocessing = PreProcessing()
         preprocessing.loadData(corpus_file,model_file,params_obj.label_dic,create_dictionary=True,insy=insy)
-        print(preprocessing.x_train[0])
         preprocessing.loadEmbeddingsCustom(vectors_file,insy)
 
         #establish params
@@ -113,7 +112,6 @@ def train(corpus_file,model_file,vectors_file):
         #create and get model
         cnn_model = models.CNNModel()
         model, deconv_model = cnn_model.getModel(params_obj=params_obj,weight=preprocessing.embedding_matrix)
-
         #train model
         x_train,y_train,x_val,y_val = preprocessing.x_train, preprocessing.y_train,preprocessing.x_val, preprocessing.y_val
         checkpoint = ModelCheckpoint(model_file,monitor="val_acc",verbose=1,save_best_only=True,mode="max")
@@ -130,7 +128,7 @@ def train(corpus_file,model_file,vectors_file):
                 break
         deconv_model.save(model_file+".deconv")
 
-def get_maximal_stimuli(text_file,model_file,vectors_file):
+def get_maximal_stimuli(text_file,model_file,vectors_file,filtersize,max_rank):
         
         params_obj = Params()
         insy = pickle.load(open(params_obj.insy_path,"rb"))
@@ -141,27 +139,55 @@ def get_maximal_stimuli(text_file,model_file,vectors_file):
         index_to_word.append("<TARGET>")
         x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
         full_model = load_model(model_file)
-        model = Model(inputs=full_model.get_layer("input_1").input,outputs=full_model.get_layer("conv2d_1").output)
-        predictions = model.predict(x_data)
-        print(predictions.shape)
-        max_rank = 20
-
+        target_layer = "conv2d_" + str(filtersize-4) 
+        model = Model(inputs=full_model.get_layer("input_1").input,outputs=full_model.get_layer(target_layer).output)
+        print(x_data.shape)
+        #nr_batches = x_data.shape[0]//100000 +1
         results = []
+        #for batch in range(nr_batches):
+        #    predictions = model.predict(x_data[100000*batch:min(len(x_data),100000*(batch+1))])
+        predictions = model.predict(x_data)
         for i in range(predictions.shape[-1]):
         #for i in range(5):
-            slice = predictions[:,:,:,i]
-            results.append([])
-            for rank in range(max_rank):
-                (n_sentence,n_word,_) = unravel_index(np.argmax(slice),slice.shape)
-                stimuli = []
-                for sliding_window in range(3):
-                    stimuli.append(preprocessing.my_dictionary["index_word"][x_data[n_sentence][n_word+sliding_window]])
-                    if n_word+sliding_window == len(x_data[n_sentence])-1:
-                        break
+                slice = predictions[:,:,:,i]
+                if not len(results) > i:
+                    results.append([])
+                for rank in range(max_rank):
+                    (n_sentence,n_word,_) = unravel_index(np.argmax(slice),slice.shape)
+                    max = np.max(slice)
+                    stimuli = []
+                    for sliding_window in range(filtersize):
+                        stimuli.append(preprocessing.my_dictionary["index_word"][x_data[n_sentence][n_word+sliding_window]])
+                        if n_word+sliding_window == len(x_data[n_sentence])-1:
+                            break
                 #print(np.max(slice))
-                results[-1].append(" ".join(stimuli))
-                slice[(n_sentence,n_word,0)]=0
-        return results
+                    results[i].append((" ".join(stimuli),max))
+                    slice[(n_sentence,n_word,0)]=0
+        sorted_results = []
+        for filterresults in results:
+            filterresults.sort(key=lambda x: x[1])
+            sorted_results.append([stimulus for (stimulus,score) in filterresults[:max_rank]])        
+        print(len(sorted_results))
+        return sorted_results
+
+def get_activations(text_file,model_file,vectors_file):
+    params_obj = Params()
+    insy = pickle.load(open(params_obj.insy_path,"rb"))
+    preprocessing = PreProcessing()
+    preprocessing.loadData(text_file,model_file,params_obj.label_dic,create_dictionary=False,insy=insy,preserve_order=True,evaluate=False)
+    preprocessing.loadEmbeddingsCustom(vectors_file,insy)
+    index_to_word = preprocessing.my_dictionary["index_word"]
+    index_to_word.append("<TARGET>")
+    x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
+    full_model = load_model(model_file)
+    model = Model(inputs=full_model.get_layer("input_1").input,outputs=full_model.get_layer("concatenate_1").output)
+    predictions = model.predict(x_data)
+    averages = []
+    for filterwidth in range(3):
+        for feature in range(50):
+            slice = predictions[:,filterwidth,0,feature]
+            averages.append(np.average(slice))
+    return averages
 
 def predict(text_file,model_file,vectors_file,evaluation=False,compressed=False):
 

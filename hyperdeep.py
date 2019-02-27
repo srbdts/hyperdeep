@@ -9,7 +9,7 @@ import os
 import json
 import numpy as np
 
-from classifier.cnn.main import train, predict, get_maximal_stimuli
+from classifier.cnn.main import train, predict, get_maximal_stimuli, get_activations
 
 def print_help():
     print("usage: python hyperdeep.py <command> <args>\n")
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # GET COMMAND
     try:
         command = sys.argv[1]
-        if command not in ["train", "predict","stimuli"]:
+        if command not in ["train", "predict","stimuli","activation"]:
             raise
     except:
         print_help()
@@ -86,11 +86,28 @@ if __name__ == '__main__':
             vectors_file = args[3]
             text_file = args[4]
             output = args[5]
-            features = get_maximal_stimuli(text_file,model_file,vectors_file)
+            filtersize = int(args[6])
+            max_rank = int(args[7])
+            features = get_maximal_stimuli(text_file,model_file,vectors_file,filtersize,max_rank)
             opf = open(output,"w")
             for feature_nr,stimuli in enumerate(features):
                 opf.write("%s\t%s\n" % (feature_nr," / ".join(stimuli)))
             opf.close()
+    if command == "activation":
+            args = get_args()
+            model_file = args[2]
+            vectors_file = args[3]
+            text_file = args[4]
+            output = args[5]
+            averages = get_activations(text_file,model_file,vectors_file)
+            opf = open(output,"w")
+            opf.write("WIDTH\tFEATURENR\tAVERAGE\n")
+            for i,avg in enumerate(averages):
+                width = i//50 + 3
+                featurenr = i%50
+                opf.write("%s\t%s\t%s\n" % (width,featurenr,avg))
+            opf.close()
+
 
         #except:
         #    print_invalidArgs_mess()
