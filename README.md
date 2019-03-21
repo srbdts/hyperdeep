@@ -10,7 +10,7 @@
 # Train
 Train a classifier
 
-    python hyperdeep.py train -input <INPUTFILE> -output <OUTPUTMODEL> -w2vec <EMBEDDINGS>
+    python hyperdeep.py train -input INPUTFILE -output OUTPUTMODEL -w2vec EMBEDDINGS
 
 e.g. python hyperdeep.py train -input data/p1_100K.data -output results/test.out -w2vec embeddings/em_p1_bi.npy
 
