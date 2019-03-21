@@ -17,6 +17,8 @@ def print_help():
     print("The commands supported by deeperbase are:\n")
     print("\ttrain\ttrain a CNN model for sentence classification\n")
     print("\tpredict\tpredict most likely labels")
+    print("\tstimuli\tretrieves maximal stimuli in corpus for filters of specified width\n")
+    print("\tactivation\tretrieves maximal activation score for every filter across input sentences\n")
     
 def print_invalidArgs_mess():
     print("Invalid argument detected!\n")
@@ -74,7 +76,7 @@ if __name__ == '__main__':
                 predictions = predict(text_file,model_file,vectors_file,compressed=False)
                 result_path = output
                 results = open(result_path, "w")
-                results.write(json.dumps(predictions))
+                results.write(json.dumps(predictions,indent=None,separators=(",\n",": ")))
                 results.close()
             else:
                 TDSs,CONF = predict(text_file,model_file,vectors_file,compressed=True)
@@ -90,10 +92,13 @@ if __name__ == '__main__':
             output = args[5]
             filtersize = int(args[6])
             max_rank = int(args[7])
-            features = get_maximal_stimuli(text_file,model_file,vectors_file,filtersize,max_rank)
+            filters = get_maximal_stimuli(text_file,model_file,vectors_file,filtersize,max_rank)
             opf = open(output,"w")
-            for feature_nr,stimuli in enumerate(features):
-                opf.write("%s\t%s\n" % (feature_nr," / ".join(stimuli)))
+            opf.write("FEATURE_NR\tRANK_OF_STIMULUS\tSTIMULUS\tACTIVATION_SCORE\n")
+            for featurenr,filter in enumerate(filters):
+                for (stimulusnr,feature) in enumerate(filter):
+                    (stimuli,score) = feature
+                    opf.write("%s\t%s\t%s\t%s\n" % (featurenr,stimulusnr,stimuli,score))
             opf.close()
     if command == "activation":
             args = get_args()
@@ -103,10 +108,12 @@ if __name__ == '__main__':
             output = args[5]
             averages = get_activations(text_file,model_file,vectors_file)
             opf = open(output,"w")
-            opf.write("WIDTH\tFEATURENR\tAVERAGE\n")
+            opf.write("WIDTH_ORDER\tFEATURENR\tAVERAGE\n")
+            N_FILTERSIZES=3
+            nb_filters_per_size = len(averages)/N_FILTERSIZES
             for i,avg in enumerate(averages):
-                width = i//50 + 3
-                featurenr = i%50
+                width = int(i//nb_filters_per_size)
+                featurenr = int(i%nb_filters_per_size)
                 opf.write("%s\t%s\t%s\n" % (width,featurenr,avg))
             opf.close()
 
