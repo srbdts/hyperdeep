@@ -1,33 +1,45 @@
-# HYPERDEEP
-Hyperdeep is a proof of concept of the deconvolution algorithm applied on text.
-It use a standard CNN for text classification, and include one layer of deconvolution for the automatic detection of linguistic marks. This software is integrated on the Hyperbase web platform (http://hyperbase.unice.fr) - a web toolbox for textual data analysis.
 
-# requirements:
-- python3
-- keras + tensorflow
+# Overview
+- hyperdeep.py: main script you call to train a model, predict input data, get the filter stimuli or average activation scores
+- config.py: contains the hyperparameters of the model. "label_dic" needs to contain the output classes in your dataset.
+- data_helpers.py: tokeniseert de inputdata; wordt aangeroepen vanuit classifier/cnn/main.py
+- classifier/cnn/models.py: creates the model; called from classifier/cnn/main.py
+- classifier/cnn/main.py: prepares the data, makes the call to create the model, trains the model and saves it.
 
-# HOW TO USE IT
-# data
-Datas are stored in the data/ folder. The training set should be splited into phrases of fixed length (50 words by default). And each phrase should have a label name at the begining of the line. A label is written : __LABELNAME__
-Hyperdeep is distributed with an example of corpus named Campagne2017 (in data/Campagne2017). This is a french corpus of the 2017 presidential election in france. There are 5 main candidates encoded with the labels (Melenchon, Hamon, Macron, Fillon, LePen).
 
-# train skipgram
-You can train a skipgram model (word2vec) by using the command :
-	$ python hyperdeep.py skipgram -input data/Campagne2017 -output bin/Campagne2017.vec
-This command will create a file named Campagne2017.vec in the folder bin (create the folder if needed). This txt is the vectors file of the training data.
+# Train
+Train a classifier
 
-# test skipgram
-the skipgram model can be tested by using the command (example with the word France) :
-	$ python hyperdeep.py nn bin/Campagne2017.vec France
+    python hyperdeep.py train -input INPUTFILE -output OUTPUTMODEL -w2vec EMBEDDINGS
 
-# train classifier
-To train the classifier:
-	$ python3 hyperdeep.py train -input data/Campagne2017 -output bin/Campagne2017
-The command will create bin/Campagne2017.index for the vocabulary and bin/Campagne2017 for the model
+e.g. python hyperdeep.py train -input data/p1_100K.data -output results/test.out -w2vec embeddings/em_p1_bi.npy
 
-# test the classifier
-Then you can make predictions on new text. There is an example in bin/Campagne2017.test. It's a discourse of E. Macron as french president on 31th december 2017. Hyperdeep will split the discourse in fixed length phrases and should predict most of the phrase a E. Macron
-	$ python hyperdeep.py predict bin/Campagne2017 bin/Campagne2017.vec data/Campagne2017.test
 
-# Observe the deconvolution
-The predict command line will create a result file in the folder result/ (create the folder if needed). This file is a json format file where you can find the activation score given by the deconvolution for each word. An example of results is given in result/Campagne2017.test.res
+# Predict
+Have a trained model label input sentences
+
+    python hyperdeep.py predict MODEL EMBEDDINGS INPUTFILE OUTPUTFILE COMPRESSED
+
+e.g. python hyperdeep.py predict results/test.out embeddings/em_p1_bi.npy data/p1_1K.data results/p1_1K.json False
+
+COMPRESSED is a boolean that allows you to specify the output format. If set to False, the output will be a json-file that contains the input sentences along with TDS-scores for each word and prediction scores for each sentence. If set to True, the input sentences themselves will not be outputted again. Instead, you will receive one numpy matrix with the prediction scores for each sentence, and one numpy matrix with TDS scores for every filter size. For example, assume that the inputfile contains 100 sentences of 50 words; the model contains 100 filters of size 3, 100 of size 4 and 100 of size 5; and the model has been trained to distinguish 3 classes. In that case, the output matrix with the prediction scores will be 100x3 (#sentences x #classes), and the 3 (#filtersizes) TDS matrices will be 100x50 (#sentences x #words).
+
+# Stimuli
+For every filter, find the N-grams in the input data that activate that filter most
+
+    python hyperdeep.py stimuli MODEL EMBEDDINGS INPUTFILE OUTPUTFILE FILTERSIZE MAX_RANK
+
+e.g. python hyperdeep.py stimuli results/test.out embeddings/em_p1_bi.npy data/p1_1K.data results/p1_stimuli.txt 3 50
+
+FILTERSIZE and MAX_RANK need to be integers. FILTERSIZE specifies the width of the filters that you want to fetch the stimuli for. MAX_RANK specifies how many stimuli you want for each filter (e.g. "10" if you want to retrieve the 10 strongest stimuli for every filter)
+
+Useful if you want to inspect what each filter has grown sensitive to.
+
+# Activation
+Get average activation score for each filter in the input sentences you provide
+
+    python hyperdeep.py activation MODEL EMBEDDINGS INPUTFILE OUTPUTFILE
+
+e.g. python hyperdeep.py activation results/test.out embeddings/em_p1_bi.npy data/p1_1K.data results/p1_activations.txt 3
+
+If the input file contains only input sentences of the same class, the activations indicate to what extent each filter is activated by that class. Paired with the output of 'stimuli', this allows you to determine which pattern every filter has grown sensitive to, and to what extent that pattern is attested in the data of that particular class.
