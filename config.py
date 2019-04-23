@@ -42,7 +42,7 @@ DROPOUT_VAL = 0.2
 
 DENSE_LAYER_SIZE = 200
 
-NUM_EPOCHS = 7
+NUM_EPOCHS = 10
 BATCH_SIZE = 800
 
 # label delimiter
@@ -72,7 +72,7 @@ LABEL_DIC={
         "couldst":19,
         "mightst":20,
 	"shalt":21,
-#	"does":22
+	"does":22
         }
 LABEL_DIC_2={"LEXICAL":0,"MODAL":1}
 

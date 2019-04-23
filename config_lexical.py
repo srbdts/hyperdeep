@@ -24,16 +24,16 @@ WINDOW_SIZE = 10
 VALIDATION_SPLIT = 0.2
 
 # SIZE OF SENTENCE (NUMBER OF WORDS)
-MAX_SEQUENCE_LENGTH = 50
+MAX_SEQUENCE_LENGTH = 15
 
-NB_FILTERS = 128
+NB_FILTERS = 50
 
 # 3 filtres:
 # 1) taille 3
 # 2) taille 4
 # 3) taille 5
 #FILTER_SIZES = [3,4,5]
-FILTER_SIZES = [3]
+FILTER_SIZES = [3,4,5]
 # 3 filtres de taille 2 a chaque fois pour le maxpooling
 #FILTER_POOL_LENGTHS = [3,3,3]
 
@@ -87,3 +87,5 @@ OOV_VECTOR = "/scratch/antwerpen/205/vsc20501/oov.npy"
 
 # Train embedding weights
 TRAIN_EMBEDDING_WEIGHTS = True
+
+MASKER = "target"
