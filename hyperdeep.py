@@ -69,20 +69,24 @@ if __name__ == '__main__':
             text_file = args[4]
             output = args[5]
             compressed = args[6]
+            average = args[7]
             if compressed == "False":
                 compressed = False
+            if average == "False":
+                average = False
             # save predictions in a file
             if not compressed:
-                predictions = predict(text_file,model_file,vectors_file,compressed=False)
+                predictions = predict(text_file,model_file,vectors_file,compressed,average)
                 result_path = output
                 results = open(result_path, "w")
                 results.write(json.dumps(predictions,indent=None,separators=(",\n",": ")))
                 results.close()
             else:
-                TDSs,CONF = predict(text_file,model_file,vectors_file,compressed=True)
+                TDSs,CONF = predict(text_file,model_file,vectors_file,compressed,average)
                 result_path = output
-                for fs,TDS in zip(FILTER_SIZES,TDSs):
-                    np.save(result_path +"." + str(fs) + ".TDS",TDS)
+                if not average:
+                    for fs,TDS in zip(FILTER_SIZES,TDSs):
+                        np.save(result_path +"." + str(fs) + ".TDS",TDS)
                 np.save(result_path + ".CONF",CONF)
     if command == "stimuli":
             args = get_args()

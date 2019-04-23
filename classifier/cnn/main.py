@@ -5,7 +5,7 @@ from numpy import unravel_index
 from keras.utils import np_utils
 from keras.models import load_model,Model
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Conv2D, Conv2DTranspose
+from keras.layers import Conv2D, Conv2DTranspose, Average
 
 from classifier.cnn import models as models
 
@@ -225,62 +225,71 @@ def predict(text_file,model_file,vectors_file,compressed=False,average=False):
         preprocessing.loadEmbeddingsCustom(vectors_file,insy)
         x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
         
-	if not average:
-		model = load_model(model_file)
-        	# Predict output class for all input sentences
-        	predictions = model.predict(x_data)
-	else:
-		models = []
-		for i in range(1,6):
-			models.append(load_model(os.path.join(model_file,"p1_"+str(i) + ".out")))
-		aggregate_input = [model.input for model in models]
-        	aggregate_output = keras.layers.Average()([model.output for model in models])
-		x_data = [x_data for i in range(len(models))]
-		predictions = model.predict(x_data)
+        if not average:
+            model = load_model(model_file)
+            # Predict output class for all input sentences
+            predictions = model.predict(x_data)
+        else:
+            models = []
+            for i in range(1,3):
+                # -5 because you want to drop the ".out" and the final digit of the model name
+                model_basis = model_file[:-5]
+                model = load_model(model_basis+str(i)+".out")
+                for layer in model.layers:
+                    layer.name = layer.name + "_" + str(i)
+                models.append(model)
+            aggregate_input = [model.input for model in models]
+            aggregate_output = Average()([model.output for model in models])
+            x_data = [x_data for i in range(len(models))]
+            model = Model(inputs=aggregate_input,outputs=aggregate_output)
+            predictions = model.predict(x_data)
 
-        # Build deconvolution models:
-        filternr = 1
-        deconv_models = []
-        for filterwidth in FILTER_SIZES:
-            # Take confolution layer of specified width
-            inputlayer = "conv2d_" + str(filternr)
-            # Create new deconvolution layer of same width and attach it to output of convolution layer 
-            deconv_layer_bis = Conv2DTranspose(1,(filterwidth,EMBEDDING_DIM),padding="valid",data_format="channels_last",kernel_initializer="normal",activation="relu")(model.get_layer(inputlayer).output)
-            # Create new model with same layers as original model until the specifiec convolutional layers, but with extra deconvolution layer
-            deconv_model = Model(inputs=model.input,outputs=deconv_layer_bis)
-            # Set the weights of the deconvolutional layer to equal the convolutional weights learned during training
-            for layer in deconv_model.layers:
-                if type(layer) is Conv2D:
-                    deconv_weights = layer.get_weights()[0]
-            deconv_bias = deconv_model.layers[-1].get_weights()[1]
-            deconv_model.layers[-1].set_weights([deconv_weights,deconv_bias])
-            deconv_models.append(deconv_model)
-            filternr+= 1 
+        if not average:
+            # Build deconvolution models:
+            filternr = 1
+            deconv_models = []
+            for filterwidth in FILTER_SIZES:
+                # Take confolution layer of specified width
+                inputlayer = "conv2d_" + str(filternr)
+                # Create new deconvolution layer of same width and attach it to output of convolution layer 
+                deconv_layer_bis = Conv2DTranspose(1,(filterwidth,EMBEDDING_DIM),padding="valid",data_format="channels_last",kernel_initializer="normal",activation="relu")(model.get_layer(inputlayer).output)
+                # Create new model with same layers as original model until the specifiec convolutional layers, but with extra deconvolution layer
+                deconv_model = Model(inputs=model.input,outputs=deconv_layer_bis)
+                # Set the weights of the deconvolutional layer to equal the convolutional weights learned during training
+                for layer in deconv_model.layers:
+                    if type(layer) is Conv2D:
+                        deconv_weights = layer.get_weights()[0]
+                deconv_bias = deconv_model.layers[-1].get_weights()[1]
+                deconv_model.layers[-1].set_weights([deconv_weights,deconv_bias])
+                deconv_models.append(deconv_model)
+                filternr+= 1 
         
 
-        # Predict deconvolution values ( = TDS scores) for every word in every input sentence
-        deconvs = []
-        for deconv_model in deconv_models:
-            deconvs.append(deconv_model.predict(x_data))
+            # Predict deconvolution values ( = TDS scores) for every word in every input sentence
+            deconvs = []
+            for deconv_model in deconv_models:
+                deconvs.append(deconv_model.predict(x_data))
 
         # Write output
         my_dictionary = preprocessing.my_dictionary
         if compressed:
             TDSs=[]
-            for deconv in deconvs:
-                #Sum over 1-dimensional axis
-                deconv = np.sum(deconv,axis=-1)
-                #Sum over 400-dimensional axis
-                deconv = np.sum(deconv,axis=-1)
-                TDSs.append(np.asarray(deconv,dtype="int16"))
+            if not average:
+                for deconv in deconvs:
+                    #Sum over 1-dimensional axis
+                    deconv = np.sum(deconv,axis=-1)
+                    #Sum over 400-dimensional axis
+                    deconv = np.sum(deconv,axis=-1)
+                    TDSs.append(np.asarray(deconv,dtype="int16"))
             CONF = np.asarray(predictions,dtype="float32")
             return TDSs,CONF
         else:
             TDSs = []
-            for deconv in deconvs:
-                deconv = np.sum(deconv,axis=-1)
-                deconv = np.sum(deconv,axis=-1)
-                TDSs.append(np.asarray(deconv,dtype="int16"))
+            if not average:
+                for deconv in deconvs:
+                    deconv = np.sum(deconv,axis=-1)
+                    deconv = np.sum(deconv,axis=-1)
+                    TDSs.append(np.asarray(deconv,dtype="int16"))
             for sentence_nb in range(len(x_data)):
                 sentence = {}
                 sentence["sentence"] = ""
@@ -294,9 +303,11 @@ def predict(text_file,model_file,vectors_file,compressed=False,average=False):
                         word = "PAD"
                     # READ DECONVOLUTION
                     deconv_values = []
-                    for TDS in TDSs:
-                        deconv_values.append(str(TDS[sentence_nb][i]))
-                    sentence["sentence"] += word + ":" + "/".join(deconv_values) + " "
+                    if not average:
+                        for TDS in TDSs:
+                            deconv_values.append(str(TDS[sentence_nb][i]))
+                        sentence["sentence"] += word + ":" + "/".join(deconv_values) + " "
+                    else: sentence["sentence"] += word + " "
                 result.append(sentence)
             return result
         
