@@ -137,7 +137,6 @@ def train(corpus_file,model_file,vectors_file):
         callbacks_list = [checkpoint]
         model.fit(x_train,y_train,validation_data=(x_val,y_val),epochs=params_obj.num_epochs,batch_size=params_obj.batch_size,callbacks=callbacks_list)
 
-
 def get_maximal_stimuli(text_file,model_file,vectors_file,filtersize,max_rank):
         """For every filter of the specified size in the pretrained model, retrieve from the input sentences the n (max_rank) sentence fragments that activate that filter most."""
         
@@ -213,7 +212,8 @@ def get_activations(text_file,model_file,vectors_file):
             averages.append(np.average(slice))
     return averages
 
-def predict(text_file,model_file,vectors_file,compressed=False):
+
+def predict(text_file,model_file,vectors_file,compressed=False,average=False):
         """Predict output labels for input sentences based on pretrained model file."""
         
         # Load input data and pretrained model into memory; vectorize input
@@ -224,11 +224,20 @@ def predict(text_file,model_file,vectors_file,compressed=False):
         preprocessing.loadData(text_file,model_file,params_obj.label_dic,create_dictionary=False,insy=insy,preserve_order=True,evaluate=False)
         preprocessing.loadEmbeddingsCustom(vectors_file,insy)
         x_data = np.concatenate((preprocessing.x_train,preprocessing.x_val),axis=0)
-        model = load_model(model_file)
-    
-        # Predict output class for all input sentences
-        predictions = model.predict(x_data)
         
+	if not average:
+		model = load_model(model_file)
+        	# Predict output class for all input sentences
+        	predictions = model.predict(x_data)
+	else:
+		models = []
+		for i in range(1,6):
+			models.append(load_model(os.path.join(model_file,"p1_"+str(i) + ".out")))
+		aggregate_input = [model.input for model in models]
+        	aggregate_output = keras.layers.Average()([model.output for model in models])
+		x_data = [x_data for i in range(len(models))]
+		predictions = model.predict(x_data)
+
         # Build deconvolution models:
         filternr = 1
         deconv_models = []
