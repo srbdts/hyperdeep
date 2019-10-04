@@ -83,7 +83,7 @@ INSY_PATH = "/home/sara/sentenceSplit/src/split/indexsystemwg_bi"
 #INSY_PATH = "/user/antwerpen/205/vsc20501/indexsystemwg_bi"
 
 # OOV vector
-OOV_VECTOR = np.load("/home/sara/sentenceSplit/src/lstms/oov.npy")
+OOV_VECTOR = np.load("oov.npy")
 #OOV_VECTOR = "/scratch/antwerpen/205/vsc20501/oov.npy"
 
 # Train embedding weights
