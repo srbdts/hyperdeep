@@ -32,8 +32,8 @@ NB_FILTERS = 100
 # 1) taille 3
 # 2) taille 4
 # 3) taille 5
-FILTER_SIZES = [3,4,5]
-#FILTER_SIZES = [5,6,7]
+#FILTER_SIZES = [3,4,5]
+FILTER_SIZES = [5,6,7]
 #FILTER_SIZES = [3]
 # 3 filtres de taille 2 a chaque fois pour le maxpooling
 #FILTER_POOL_LENGTHS = [3,3,3]
