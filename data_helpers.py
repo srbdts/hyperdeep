@@ -28,6 +28,10 @@ def tokenize(texts, model_file, create_dictionnary,insy=False):
             insy.word_to_index["<TARGET>"]=len(insy.word_to_index)
             insy.index_to_word[0] = "<PAD>"
             insy.index_to_word.append("<TARGET>")
+            if not "OOV" in insy.word_to_index:
+                index = len(insy.word_to_index)
+                insy.index_to_word.append("OOV")
+                insy.word_to_index["OOV"] = index
             my_dictionary["word_index"] = insy.word_to_index
             my_dictionary["index_word"] = insy.index_to_word
      
